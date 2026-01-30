@@ -11,6 +11,17 @@ import {
 // Importando Icones do pacote padrão do Expo
 import { Ionicons } from "@expo/vector-icons";
 
+const TEMAS = [
+  { nome: "Video Games", icone: "game-controller-outline" },
+  { nome: "Filmes & Séries", icone: "film-outline" },
+  { nome: "Objetos", icone: "cube-outline" },
+  { nome: "Lugares", icone: "map-outline" },
+  { nome: "Comida", icone: "fast-food-outline" },
+  { nome: "Animais", icone: "paw-outline" },
+  { nome: "Profissões", icone: "briefcase-outline" },
+  { nome: "Super-heróis", icone: "flash-outline" },
+];
+
 export default function HomeScreen() {
   // 1. ESTADO: Lista dos nomes dos jogadores (Começa vazia)
   const [jogadores, setJogadores] = useState<string[]>([]);
@@ -20,6 +31,9 @@ export default function HomeScreen() {
 
   // 3. ESTADO: Controla se mostramos o botão "+" ou o Input de texto
   const [estouAdicionando, setEstouAdicionando] = useState(false);
+
+  // 4. ESTADO: Controla se o jogo já começou (Seleção de temas)
+  const [jogoIniciado, setJogoIniciado] = useState(false);
 
   // FUNÇÃO: Adicionar jogador na lista
   const confirmarJogador = () => {
@@ -42,7 +56,7 @@ export default function HomeScreen() {
       Alert.alert("Faltam jogadores", "Mínimo de 3 pessoas para jogar!");
       return;
     }
-    Alert.alert("Sucesso", "O jogo vai começar agora! (Lógica futura)");
+    setJogoIniciado(true);
   };
 
   // FUNÇÃO EXTRA: Remover jogador (Caso erre o nome)
@@ -52,6 +66,40 @@ export default function HomeScreen() {
     );
     setJogadores(novaLista);
   };
+
+  const selecionarTema = (tema: string) => {
+    Alert.alert("Tema Selecionado", `Vamos jogar com: ${tema}`);
+  };
+
+  // SE O JOGO JÁ INICIOU, MOSTRA A TELA DE TEMAS
+  if (jogoIniciado) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.titulo}>Escolha um Tema</Text>
+        <Text style={styles.subtitulo}>Sobre o que vamos falar?</Text>
+
+        <ScrollView style={styles.listaContainer}>
+          {TEMAS.map((tema, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.itemTema}
+              onPress={() => selecionarTema(tema.nome)}
+            >
+              <Ionicons name={tema.icone as any} size={28} color="#007AFF" />
+              <Text style={styles.textoTema}>{tema.nome}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <TouchableOpacity
+          style={styles.btnVoltar}
+          onPress={() => setJogoIniciado(false)}
+        >
+          <Text style={styles.textoBtnVoltar}>Voltar aos Jogadores</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -201,5 +249,28 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     letterSpacing: 1,
+  },
+  itemTema: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 12,
+    gap: 15,
+    elevation: 2,
+  },
+  textoTema: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+  },
+  btnVoltar: {
+    padding: 15,
+    alignItems: "center",
+  },
+  textoBtnVoltar: {
+    color: "#666",
+    fontSize: 16,
   },
 });

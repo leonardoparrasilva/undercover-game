@@ -1,0 +1,17 @@
+export const VIDEO_GAMES = [
+  "Mario Bros",
+  "Sonic",
+  "Minecraft",
+  "Fortnite",
+  "Pac-Man",
+  "GTA",
+  "League of Legends",
+  "Counter-Strike",
+  "The Sims",
+  "Tetris",
+  "Zelda",
+  "God of War",
+  "Call of Duty",
+  "Cyberpunk 2077",
+  "Among Us",
+];

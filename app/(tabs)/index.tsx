@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,11 +12,12 @@ import {
 // Importando Icones do pacote padrão do Expo
 import { Ionicons } from "@expo/vector-icons";
 
+import { CATEGORIAS } from "@/constants/themes/words";
+
 const TEMAS = [
   { nome: "Video Games", icone: "game-controller-outline" },
   { nome: "Filmes & Séries", icone: "film-outline" },
   { nome: "Objetos", icone: "cube-outline" },
-  { nome: "Lugares", icone: "map-outline" },
   { nome: "Comida", icone: "fast-food-outline" },
   { nome: "Animais", icone: "paw-outline" },
   { nome: "Profissões", icone: "briefcase-outline" },
@@ -34,6 +36,14 @@ export default function HomeScreen() {
 
   // 4. ESTADO: Controla se o jogo já começou (Seleção de temas)
   const [jogoIniciado, setJogoIniciado] = useState(false);
+
+  // 5. ESTADOS DO JOGO (Revelação das cartas)
+  const [faseRevelacao, setFaseRevelacao] = useState(false);
+  const [palavraSecreta, setPalavraSecreta] = useState("");
+  const [impostorIndex, setImpostorIndex] = useState(-1);
+  const [jogadorAtualIndex, setJogadorAtualIndex] = useState(0);
+  const [mostrandoSegredo, setMostrandoSegredo] = useState(false);
+  const [viuSegredo, setViuSegredo] = useState(false); // Para liberar o botão "Próximo"
 
   // FUNÇÃO: Adicionar jogador na lista
   const confirmarJogador = () => {
@@ -68,8 +78,87 @@ export default function HomeScreen() {
   };
 
   const selecionarTema = (tema: string) => {
-    Alert.alert("Tema Selecionado", `Vamos jogar com: ${tema}`);
+    // 1. Sorteia a palavra do tema (Por enquanto fixo em Video Games ou genérico)
+    const listaPalavras = CATEGORIAS[tema];
+
+    if (!listaPalavras) {
+      Alert.alert("Em breve", "Este tema ainda não tem palavras cadastradas!");
+      return;
+    }
+
+    const palavraSorteada =
+      listaPalavras[Math.floor(Math.random() * listaPalavras.length)];
+    setPalavraSecreta(palavraSorteada);
+
+    // 2. Sorteia quem será o impostor (índice aleatório entre 0 e total de jogadores - 1)
+    const indexImpostor = Math.floor(Math.random() * jogadores.length);
+    setImpostorIndex(indexImpostor);
+
+    // 3. Reseta estados da rodada
+    setJogadorAtualIndex(0);
+    setViuSegredo(false);
+    setMostrandoSegredo(false);
+
+    // 4. Muda para a tela de revelação
+    setFaseRevelacao(true);
   };
+
+  const proximoJogador = () => {
+    if (jogadorAtualIndex < jogadores.length - 1) {
+      // Passa para o próximo
+      setJogadorAtualIndex(jogadorAtualIndex + 1);
+      setViuSegredo(false); // Bloqueia o botão até ele ver o segredo
+    } else {
+      // Fim da revelação
+      Alert.alert(
+        "Tudo pronto!",
+        "Todos sabem suas identidades. Que comece o debate!",
+      );
+      // Aqui você poderia resetar ou ir para uma tela de cronômetro
+      setFaseRevelacao(false);
+      setJogoIniciado(false);
+    }
+  };
+
+  // TELA DE REVELAÇÃO (CARD)
+  if (faseRevelacao) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.subtitulo}>Passe o celular para:</Text>
+        <Text style={styles.tituloGrande}>{jogadores[jogadorAtualIndex]}</Text>
+
+        <Pressable
+          style={[
+            styles.cardSecreto,
+            mostrandoSegredo &&
+              (jogadorAtualIndex === impostorIndex
+                ? styles.cardImpostor
+                : styles.cardCivil),
+          ]}
+          onPressIn={() => {
+            setMostrandoSegredo(true);
+            setViuSegredo(true); // Marca que o jogador viu
+          }}
+          onPressOut={() => setMostrandoSegredo(false)}
+        >
+          <Text style={styles.textoCard}>
+            {mostrandoSegredo
+              ? jogadorAtualIndex === impostorIndex
+                ? "IMPOSTOR"
+                : palavraSecreta
+              : "SEGURE PARA VER"}
+          </Text>
+        </Pressable>
+
+        {viuSegredo && (
+          <TouchableOpacity style={styles.btnProximo} onPress={proximoJogador}>
+            <Text style={styles.textoBtnIniciar}>PRÓXIMO JOGADOR</Text>
+            <Ionicons name="arrow-forward" size={24} color="white" />
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
 
   // SE O JOGO JÁ INICIOU, MOSTRA A TELA DE TEMAS
   if (jogoIniciado) {
@@ -174,6 +263,9 @@ const styles = StyleSheet.create({
     paddingTop: 60, // Para não colar no topo da tela
     backgroundColor: "#f5f5f5",
   },
+  centerContent: {
+    alignItems: "center",
+  },
   titulo: {
     fontSize: 28,
     fontWeight: "bold",
@@ -185,6 +277,13 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
     marginBottom: 20,
+  },
+  tituloGrande: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#007AFF",
+    marginBottom: 30,
+    textAlign: "center",
   },
   listaContainer: {
     flex: 1,
@@ -272,5 +371,35 @@ const styles = StyleSheet.create({
   textoBtnVoltar: {
     color: "#666",
     fontSize: 16,
+  },
+  cardSecreto: {
+    width: "100%",
+    height: 250,
+    backgroundColor: "#333",
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 30,
+    elevation: 5,
+  },
+  cardImpostor: {
+    backgroundColor: "#FF3B30", // Vermelho
+  },
+  cardCivil: {
+    backgroundColor: "#4CAF50", // Verde
+  },
+  textoCard: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+  },
+  btnProximo: {
+    flexDirection: "row",
+    backgroundColor: "#007AFF",
+    padding: 15,
+    borderRadius: 12,
+    alignItems: "center",
+    gap: 10,
   },
 });

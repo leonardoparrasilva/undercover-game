@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -11,6 +11,7 @@ import {
 } from "react-native";
 // Importando Icones do pacote padrão do Expo
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { CATEGORIAS } from "@/constants/themes/words";
 
@@ -51,6 +52,21 @@ export default function HomeScreen() {
   const [temaAtual, setTemaAtual] = useState("");
   const [palavrasUsadas, setPalavrasUsadas] = useState<string[]>([]);
 
+  // CARREGAR JOGADORES SALVOS AO INICIAR O APP
+  useEffect(() => {
+    const carregarJogadores = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem("@undercover_jogadores");
+        if (jsonValue != null) {
+          setJogadores(JSON.parse(jsonValue));
+        }
+      } catch (e) {
+        console.error("Erro ao carregar jogadores", e);
+      }
+    };
+    carregarJogadores();
+  }, []);
+
   // FUNÇÃO: Adicionar jogador na lista
   const confirmarJogador = () => {
     if (novoNome.trim() === "") {
@@ -59,7 +75,9 @@ export default function HomeScreen() {
     }
 
     // Adiciona o novo nome à lista antiga
-    setJogadores([...jogadores, novoNome]);
+    const novaLista = [...jogadores, novoNome];
+    setJogadores(novaLista);
+    AsyncStorage.setItem("@undercover_jogadores", JSON.stringify(novaLista));
 
     // Limpa o input e volta a mostrar o botão de "+"
     setNovoNome("");
@@ -81,6 +99,7 @@ export default function HomeScreen() {
       (_, index) => index !== indexParaRemover,
     );
     setJogadores(novaLista);
+    AsyncStorage.setItem("@undercover_jogadores", JSON.stringify(novaLista));
   };
 
   const configurarRodada = (tema: string) => {

@@ -45,6 +45,12 @@ export default function HomeScreen() {
   const [mostrandoSegredo, setMostrandoSegredo] = useState(false);
   const [viuSegredo, setViuSegredo] = useState(false); // Para liberar o botão "Próximo"
 
+  // 6. ESTADOS FINAIS
+  const [faseFinal, setFaseFinal] = useState(false);
+  const [jogadorInicialIndex, setJogadorInicialIndex] = useState(0);
+  const [temaAtual, setTemaAtual] = useState("");
+  const [palavrasUsadas, setPalavrasUsadas] = useState<string[]>([]);
+
   // FUNÇÃO: Adicionar jogador na lista
   const confirmarJogador = () => {
     if (novoNome.trim() === "") {
@@ -77,8 +83,7 @@ export default function HomeScreen() {
     setJogadores(novaLista);
   };
 
-  const selecionarTema = (tema: string) => {
-    // 1. Sorteia a palavra do tema (Por enquanto fixo em Video Games ou genérico)
+  const configurarRodada = (tema: string) => {
     const listaPalavras = CATEGORIAS[tema];
 
     if (!listaPalavras) {
@@ -86,8 +91,20 @@ export default function HomeScreen() {
       return;
     }
 
-    const palavraSorteada =
-      listaPalavras[Math.floor(Math.random() * listaPalavras.length)];
+    // Filtra palavras que já foram usadas
+    let pool = listaPalavras.filter((p) => !palavrasUsadas.includes(p));
+    let resetHistory = false;
+
+    // Se todas foram usadas, reseta o histórico
+    if (pool.length === 0) {
+      pool = listaPalavras;
+      resetHistory = true;
+    }
+
+    const palavraSorteada = pool[Math.floor(Math.random() * pool.length)];
+    setPalavrasUsadas((prev) =>
+      resetHistory ? [palavraSorteada] : [...prev, palavraSorteada],
+    );
     setPalavraSecreta(palavraSorteada);
 
     // 2. Sorteia quem será o impostor (índice aleatório entre 0 e total de jogadores - 1)
@@ -101,6 +118,12 @@ export default function HomeScreen() {
 
     // 4. Muda para a tela de revelação
     setFaseRevelacao(true);
+    setFaseFinal(false);
+  };
+
+  const selecionarTema = (tema: string) => {
+    setTemaAtual(tema);
+    configurarRodada(tema);
   };
 
   const proximoJogador = () => {
@@ -109,15 +132,30 @@ export default function HomeScreen() {
       setJogadorAtualIndex(jogadorAtualIndex + 1);
       setViuSegredo(false); // Bloqueia o botão até ele ver o segredo
     } else {
-      // Fim da revelação
-      Alert.alert(
-        "Tudo pronto!",
-        "Todos sabem suas identidades. Que comece o debate!",
-      );
-      // Aqui você poderia resetar ou ir para uma tela de cronômetro
+      // Fim da revelação -> Fase Final
+      const quemComeca = Math.floor(Math.random() * jogadores.length);
+      setJogadorInicialIndex(quemComeca);
+
       setFaseRevelacao(false);
-      setJogoIniciado(false);
+      setFaseFinal(true);
     }
+  };
+
+  // AÇÕES DA TELA FINAL
+  const irParaInicio = () => {
+    setFaseFinal(false);
+    setJogoIniciado(false);
+    // Mantém a lista de jogadores
+  };
+
+  const reiniciarJogo = () => {
+    // Reinicia com o mesmo tema e nova palavra
+    configurarRodada(temaAtual);
+  };
+
+  const irParaTemas = () => {
+    setFaseFinal(false);
+    setJogoIniciado(true); // Volta para a lista de temas
   };
 
   // TELA DE REVELAÇÃO (CARD)
@@ -156,6 +194,44 @@ export default function HomeScreen() {
             <Ionicons name="arrow-forward" size={24} color="white" />
           </TouchableOpacity>
         )}
+      </View>
+    );
+  }
+
+  // TELA FINAL (Quem começa + Opções)
+  if (faseFinal) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.subtitulo}>Quem começa falando é:</Text>
+        <Text style={styles.tituloGrande}>
+          {jogadores[jogadorInicialIndex]}
+        </Text>
+
+        <View style={styles.areaBotoesFinal}>
+          <TouchableOpacity
+            style={[styles.btnFinal, { backgroundColor: "#4CAF50" }]}
+            onPress={reiniciarJogo}
+          >
+            <Ionicons name="refresh" size={24} color="white" />
+            <Text style={styles.textoBtnFinal}>Reiniciar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.btnFinal, { backgroundColor: "#007AFF" }]}
+            onPress={irParaTemas}
+          >
+            <Ionicons name="grid-outline" size={24} color="white" />
+            <Text style={styles.textoBtnFinal}>Novo Tema</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.btnFinal, { backgroundColor: "#666" }]}
+            onPress={irParaInicio}
+          >
+            <Ionicons name="people-outline" size={24} color="white" />
+            <Text style={styles.textoBtnFinal}>Início</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -401,5 +477,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     gap: 10,
+  },
+  areaBotoesFinal: {
+    width: "100%",
+    gap: 15,
+    marginTop: 20,
+  },
+  btnFinal: {
+    flexDirection: "row",
+    padding: 18,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  textoBtnFinal: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
